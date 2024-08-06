@@ -1,16 +1,24 @@
+import os
+import sys
+
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///./sql_app.db"
-# TODO: set up postgres
-# TODO: use postgers
-# TODO: get postgres from configuration
-# TODO: automigrate postgres
-# SQLALCHEMY_DATABASE_URL = "postgresql://user:password@postgresserver/db"
+
+def acquire_database_url():
+    ENVVAR = "APP_PGSQL_CONNECTION_STRING"
+    try:
+        return os.environ[ENVVAR]
+    except KeyError:
+        print(f"error: Missing environment variable {ENVVAR}", file=sys.stderr)
+        exit(1)
+
+
+SQLALCHEMY_DATABASE_URL = acquire_database_url()
 
 engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+    SQLALCHEMY_DATABASE_URL
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

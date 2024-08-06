@@ -14,6 +14,8 @@ let
   devDeps = p: with p; [
     ptpython # nicer repl
     pytest
+
+    psycopg2
   ];
 in
 {

@@ -12,7 +12,7 @@ watch:
 	make --no-print-directory run
 
 run: setup ## run the app
-	pdm run fastapi dev src/applover_t1/app.py 
+	APP_PGSQL_CONNECTION_STRING="postgresql://user:password@localhost/db" pdm run fastapi dev src/applover_t1/app.py 
 
 env-up: ## set up dev environment
 	@echo "Not implemented"; false

@@ -1,12 +1,7 @@
-Hello world:
-- select 1 z postgresa na api endpoint /tost
-    - docker-compose + postrgres
-    - jakiś orm czy coś - sql alchemy? co jest cool teraz?
-        - jezu migracje xD
-
-Wywołanie polecenia docker compose up powinno skutkować uruchomieniem działającej aplikacji.
-
 TODO: editor doesn't recognize fastapi imports
+
+Hello model:
+    migracje
 
 Dalej:
     Książka =
@@ -32,12 +27,17 @@ Dalej:
 
     ...
 
+======
+
 API powinno umożliwiać:
 - Dodanie nowej książki
 - Usunięcie książki
 - Pobranie listy wszystkich książek
 - Aktualizację stanu książki: wypożyczona / dostępna
 
-# TODO: swagger definition would be cool
+====
+
+Wywołanie polecenia docker compose up powinno skutkować uruchomieniem działającej aplikacji.
 
 Rozwiązanie dostarcz w formie linku do publicznego repozytorium git (dowolny hosting).
+

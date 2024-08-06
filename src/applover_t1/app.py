@@ -21,4 +21,5 @@ def read_root(db: Session = Depends(get_db)):
     result = db.execute(text("SELECT 1"))
     return {"Hello": result.all()[0][0]}
 
+# TODO: automigrate postgres
 # TODO: `test all with docker-compsoe up`
