@@ -1,0 +1,43 @@
+Hello world:
+- select 1 z postgresa na api endpoint /tost
+    - docker-compose + postrgres
+    - jakiś orm czy coś - sql alchemy? co jest cool teraz?
+        - jezu migracje xD
+
+Wywołanie polecenia docker compose up powinno skutkować uruchomieniem działającej aplikacji.
+
+TODO: editor doesn't recognize fastapi imports
+
+Dalej:
+    Książka =
+        serial <- tutaj walidacja
+            "sześciocyfrowej liczby"
+            6 * digit where digit 0-9
+                unique
+        tytuł <- arbitralnie długi string, 128
+        autor <- krótszy arbitralnie długi string, 128
+            can think of a case of mutliple authors
+
+    Wypożyczenia =
+        książka
+        kto
+            (wypożyczający posiadają sześciocyfrowe numery karty bibliotecznej), see book serial
+        start
+        end
+            nullable
+
+    Can I do a fancy constraint that only one book can be borrowed at a particular time?
+
+    Jakiś widok książki maybe?
+
+    ...
+
+API powinno umożliwiać:
+- Dodanie nowej książki
+- Usunięcie książki
+- Pobranie listy wszystkich książek
+- Aktualizację stanu książki: wypożyczona / dostępna
+
+# TODO: swagger definition would be cool
+
+Rozwiązanie dostarcz w formie linku do publicznego repozytorium git (dowolny hosting).
