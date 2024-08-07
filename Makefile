@@ -15,7 +15,8 @@ run: setup ## run the app
 	APP_PGSQL_CONNECTION_STRING="postgresql://user:password@localhost/db" pdm run fastapi dev src/applover_t1/app.py 
 
 env-up: ## set up dev environment
-	@echo "Not implemented"; false
+	# https://stackoverflow.com/questions/47207616/auto-remove-container-with-docker-compose-yml
+	podman-compose up --force-recreate -V
 
 env-down: ## tear down dev environment
 	@echo "Not implemented"; false

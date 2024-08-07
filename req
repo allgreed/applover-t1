@@ -1,18 +1,14 @@
 TODO: editor doesn't recognize fastapi imports
+    -> can I enter venv reasonably?
 
-Hello model:
-    migracje
+- Dodanie nowej książki *
+- Usunięcie książki
+- Pobranie listy wszystkich książek
 
+===============
 Dalej:
-    Książka =
-        serial <- tutaj walidacja
-            "sześciocyfrowej liczby"
-            6 * digit where digit 0-9
-                unique
-        tytuł <- arbitralnie długi string, 128
-        autor <- krótszy arbitralnie długi string, 128
-            can think of a case of mutliple authors
-
+        Backlink
+        V
     Wypożyczenia =
         książka
         kto
@@ -26,18 +22,14 @@ Dalej:
     Jakiś widok książki maybe?
 
     ...
-
-======
+also: EXISTING METHODS!
 
 API powinno umożliwiać:
-- Dodanie nowej książki
-- Usunięcie książki
 - Pobranie listy wszystkich książek
+    - hehe (careful N+1)
 - Aktualizację stanu książki: wypożyczona / dostępna
 
 ====
-
 Wywołanie polecenia docker compose up powinno skutkować uruchomieniem działającej aplikacji.
 
 Rozwiązanie dostarcz w formie linku do publicznego repozytorium git (dowolny hosting).
-
