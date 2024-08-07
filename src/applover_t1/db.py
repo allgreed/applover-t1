@@ -3,7 +3,7 @@ import sys
 
 from sqlalchemy import create_engine, Column as Col, Integer, String, CheckConstraint
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, Session
 
 
 class Column(Col):
@@ -16,7 +16,7 @@ class Column(Col):
         super().__init__(*args, **kwargs)
 
 
-def acquire_database_url():
+def acquire_database_url() -> str:
     ENVVAR = "APP_PGSQL_CONNECTION_STRING"
     try:
         return os.environ[ENVVAR]
@@ -35,7 +35,7 @@ Base = declarative_base()
 def automigrate():
     Base.metadata.create_all(bind=engine)
 
-def get_db():
+def get_db() -> Session:
     db = SessionLocal()
     try:
         yield db
