@@ -1,10 +1,10 @@
 from typing_extensions import Annotated
 
 from fastapi import FastAPI, Depends, status
-from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
+from sqlalchemy.exc import IntegrityError
 
-from .db import get_db, automigrate, Book
+from .db import get_db, automigrate, Book, handle_unique_constraint_violation
 
 
 app = FastAPI()
@@ -12,28 +12,6 @@ automigrate()
 @app.get("/")
 def default():
     return "OK"
-
-
-# TODO: move it to db
-# TODO: apply where approperiate
-import re
-from sqlalchemy.exc import IntegrityError
-import psycopg2
-@app.exception_handler(IntegrityError)
-def unique_constraint_violation_handler(request, exc):
-    if not isinstance(exc.orig, psycopg2.errors.UniqueViolation):
-        raise
-    exc = exc.orig
-
-    REG = r"""ERROR:  duplicate key value violates unique constraint "books_serial_key"
-DETAIL:  Key \((.+)\)=\((.+)\) already exists."""
-    key, value = re.match(REG, exc.pgerror).groups()
-
-    # TODO: mimic the style of pydantic - use key and value!
-    return JSONResponse(
-        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content={"detail": "Integrity error occurred. Possibly a unique constraint violation."}
-    )
 
 
 BookSerial = Annotated[int, Field(strict=True, ge=0, le=10 ** 6 - 1)]
@@ -62,10 +40,12 @@ def delete_book(book_serial: BookSerial, db = Depends(get_db)) -> None:
 @app.post("/books")
 def add_book(b: BookSchema, db = Depends(get_db)) -> BookSchema:
     new_book = Book(**b.dict())
-    with db.begin():
-        db.add(new_book)
+    try:
+        with db.begin():
+            db.add(new_book)
+    except IntegrityError as e:
+        handle_unique_constraint_violation(e, loc=["body"])
 
-    # TODO: bubble down db errors
     return new_book
 
 
