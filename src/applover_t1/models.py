@@ -54,9 +54,6 @@ class Book(Base):
         try:
             # optimization opportunity: there might be some N+1 going on here
             # the implementation is very naive
-
-            # this is apparently causing SQLAlchemy to question it's compilation cache cohesion o.0
-            # see https://sqlalche.me/e/20/cprf
             result: BookLending = next(filter(lambda L: not L.is_concluded, self.lendings))
             # this type assert is needed becasue otherwise L is of type "BookLending | None" and errors on member access
             return result

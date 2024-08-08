@@ -104,7 +104,7 @@ def borrow_book(b: Borrow, book_serial: BookSerialFromPath, db = Depends(Databas
 @app.delete("/books/{book_serial}/lending")
 def return_book(book_serial: BookSerialFromPath, db = Depends(Database.get_db)):
     # there's a possible race condition if the return request gets send twice, the first request completes
-    # the second one gets delayed and someone borrows that book before the second request reaches the sever
+    # the second one gets delayed and someone borrows that book before the second request reaches the server
     # in that case the book would be marked as returned, even though it's not
     # mitigiation: include borrower library card number in the request
     # better mititgation: include BookLending uuid in the request
@@ -119,5 +119,5 @@ def Book_by_serial(db: Db_T, serial: BookSerial) -> Book:
 
     if not result:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Book with serial number {serial} was not found")
-    else:
-        return result
+
+    return result
