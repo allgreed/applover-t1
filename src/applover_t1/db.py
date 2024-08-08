@@ -1,6 +1,7 @@
 import os
 import re
 import sys
+from typing import Optional
 
 import psycopg2
 from fastapi import status
@@ -81,6 +82,7 @@ DETAIL:  Key \((.+)\)=\((.+)\) already exists."""
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         content=err,
     )
+    # TODO: return ValidationError!
 
 
 class Book(Base):
@@ -102,11 +104,26 @@ class Book(Base):
         cascade="all, delete",
     )
 
-    # optimization opportunity: there might be some N+1 going on here
-    # the implementation is very naive
     @property
     def is_avaiable(self) -> bool:
-        return all(x.is_book_returned for x in self.lendings)
+        return not bool(self.current_lending)
+
+    @property
+    def current_lending(self) -> Optional["BookLending"]:
+        try:
+            # optimization opportunity: there might be some N+1 going on here
+            # the implementation is very naive
+            return next(filter(lambda L: not L.is_book_returned, self.lendings))
+        except StopIteration: # no active lending
+            return None
+
+    @property
+    def borrower_library_card_number(self) -> Optional[int]:
+        return self.current_lending.borrower_library_card_number
+
+    @property
+    def borrowed_on(self):
+        return self.current_lending.start
 
 
 # this was consulted with a native speaker-programmer, it's better than BookLoan

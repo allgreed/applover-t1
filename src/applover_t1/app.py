@@ -1,6 +1,6 @@
 import datetime
-from typing import Optional
 from typing_extensions import Annotated
+from typing import Literal, Union
 
 from fastapi import FastAPI, Depends, status, Response
 from pydantic import BaseModel, Field
@@ -17,7 +17,10 @@ def default():
 
 
 SixDigitId = Annotated[int, Field(strict=True, ge=0, le=10 ** 6 - 1)]
+
+LibraryCardNumber = SixDigitId
 BookSerial = SixDigitId
+
 class BookBase(BaseModel):
     serial: BookSerial
     title: str
@@ -26,21 +29,18 @@ class BookBase(BaseModel):
 class BookCreate(BookBase):
     pass
 
-class BookRead(BookBase):
-    is_avaiable: bool
+class BookAviable(BookBase):
+    is_avaiable: Literal[True]
 
-
-LibraryCardNumber = SixDigitId
-class BookLendingBase(BaseModel):
+class BookBorrowed(BookBase):
+    is_avaiable: Literal[False]
     borrower_library_card_number: LibraryCardNumber
+    borrowed_on: datetime.datetime
 
-class BookLendingCreate(BookLendingBase):
-    pass
+BookRead = Union[BookAviable, BookBorrowed]
 
-class BookLendingRead(BookLendingBase):
-    book: BookRead
-    start: datetime.datetime
-    end: Optional[datetime.datetime]
+class Borrow(BaseModel):
+    borrower_library_card_number: LibraryCardNumber
 
 
 @app.get("/books")
@@ -58,7 +58,7 @@ def delete_book(book_serial: int, db = Depends(get_db)) -> None:
 
 
 @app.post("/books")
-def add_book(b: BookCreate, db = Depends(get_db)) -> BookRead:
+def add_book(b: BookCreate, db = Depends(get_db)) -> BookAviable:
     new_book = Book(**b.dict())
     try:
         with db.begin():
@@ -72,7 +72,7 @@ def add_book(b: BookCreate, db = Depends(get_db)) -> BookRead:
 
 # TODO: what's with the book serial actual type <
 @app.post("/books/{book_serial}/lending")
-def borrow_book(b: BookLendingCreate, book_serial: int, db = Depends(get_db)) -> BookLendingRead:
+def borrow_book(b: Borrow, book_serial: int, db = Depends(get_db)) -> BookBorrowed:
     print(type(book_serial))
     print("aaa")
     with db.begin():
@@ -82,7 +82,7 @@ def borrow_book(b: BookLendingCreate, book_serial: int, db = Depends(get_db)) ->
         # TODO: what if there's no book?
         book = db.query(Book).filter(Book.serial == book_serial).first()
         # TODO: handle this as an error
-        # assert book.is_avaiable
+        assert book.is_avaiable
 
         new_lending = BookLending(**b.dict(), book_id=book.id)
         db.add(new_lending)
@@ -100,13 +100,8 @@ def return_book(book_serial: int, db = Depends(get_db)):
     with db.begin():
         book = db.query(Book).filter(Book.serial == book_serial).first()
         # TODO: pipe the abstraction into the model
-        try:
-            active_lending =  next(filter(lambda L: not L.is_book_returned, book.lendings))
-        except StopIteration: # no active lending
-            # TODO: deal with the duplication
-            return Response(status_code=status.HTTP_204_NO_CONTENT)
         from sqlalchemy import func
-        active_lending.end = func.now()
+        book.current_lending.end = func.now()
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 

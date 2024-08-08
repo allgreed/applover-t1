@@ -5,10 +5,6 @@ TODO: editor doesn't recognize fastapi imports
 TODO: by default return 204 from delete endpoints
     ^ task research
 
-    oraz czy jest obecnie wypożyczona, kiedy i kto ją wypożyczył (wypożyczający posiadają
-    sześciocyfrowe numery karty bibliotecznej)
-        > different response read models? :D
-
     TODOs
     commit
 
