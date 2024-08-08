@@ -23,7 +23,6 @@ class Database:
         SQLALCHEMY_DATABASE_URL = acquire_database_url()
         cls.engine = create_engine(
             SQLALCHEMY_DATABASE_URL,
-            query_cache_size=0  # disabling query compilation cache
         )
 
         cls.SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=cls.engine)
@@ -109,6 +108,9 @@ class Column(Col):
     Becuase the default is "True"
     see: https://stackoverflow.com/a/68052174/9134286
     """
+    # this is required to let SQLAlchemy know that it's still cacheable
+    inherit_cache = True
+
     def __init__(self, *args, **kwargs):
         kwargs.setdefault('nullable', False)
         super().__init__(*args, **kwargs)
