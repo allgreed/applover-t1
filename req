@@ -1,17 +1,12 @@
-TODO: editor doesn't recognize fastapi imports
-    -> can I enter venv reasonably?
-    ^ actually task this
-
-TODO: by default return 204 from delete endpoints
-    ^ task research
-
-TODO: Path vs Field, example: BookSerial
-    ^ task research
-
-TODO: tests - stateful property based
-
     TODOs
     commit
+
+    V remainaing TODOs
+    how to distribute things across files?
+        - like... where should schemas go? o.0
+    commit
+
+    some very basic e2e test
 ====
 
 Wywołanie polecenia docker compose up powinno skutkować uruchomieniem działającej aplikacji.

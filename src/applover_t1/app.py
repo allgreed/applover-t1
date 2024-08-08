@@ -1,4 +1,5 @@
 import datetime
+import contextlib
 from typing_extensions import Annotated
 from typing import Literal, Union
 
@@ -6,7 +7,7 @@ from fastapi import FastAPI, Depends, status, Response, HTTPException, Path
 from pydantic import BaseModel, Field
 from sqlalchemy.exc import IntegrityError
 
-from .db import get_db, automigrate, Book, handle_unique_constraint_violation, BookLending
+from .db import get_db, automigrate, Book, handle_unique_constraint_violation, BookLending, DoubleBorrowError
 
 
 app = FastAPI()
@@ -53,13 +54,15 @@ BookSerialFromPath = Annotated[int, Path(**SixDigitIntConstraintStub)]
 def list_books(db = Depends(get_db)) -> list[BookRead]:
     return db.query(Book).all()
 
+
+# TODO: can this be dependency injected? :D
 # TODO: what with the type and does it belong here?
 # def Book_by_serial(db: Session, serial: BookSerial):
 def Book_by_serial(db, serial: BookSerial) -> Book:
     result = db.query(Book).filter(Book.serial == serial).first()
 
     if not result:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Book with serial {serial} was not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Book with serial number {serial} was not found")
     else:
         return result
 
@@ -68,7 +71,8 @@ def Book_by_serial(db, serial: BookSerial) -> Book:
 def delete_book(book_serial: BookSerialFromPath, db = Depends(get_db)) -> None:
     with db.begin():
         # optimization opportunity: this doesn't need to do a full table scan, since the serial is unique
-        Book_by_serial(db, book_serial).delete()
+        # nor does it need actually fetching the book in order to delete it
+        db.delete(Book_by_serial(db, book_serial))
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
@@ -79,6 +83,8 @@ def add_book(b: BookCreate, db = Depends(get_db)) -> BookAviable:
     try:
         with db.begin():
             db.add(new_book)
+    # I don't love how excpetion IntegrityError requires an sqlalchemy import
+    # however also see no point in hiding the exact exception
     except IntegrityError as e:
         handle_unique_constraint_violation(e, loc=["body"])
 
@@ -89,15 +95,12 @@ def add_book(b: BookCreate, db = Depends(get_db)) -> BookAviable:
 def borrow_book(b: Borrow, book_serial: BookSerialFromPath, db = Depends(get_db)) -> BookBorrowed:
     with db.begin():
         # wrapping whole thing in a transaction should be enough, but I'm still not super sure it's race condition free
-
         book = Book_by_serial(db, book_serial)
 
-        if not book.is_avaiable:
+        try:
+            book.borrow_by(b.borrower_library_card_number)
+        except DoubleBorrowError:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Requested book is already borrowed")
-
-        # TODO: isn't this too low level?
-        new_lending = BookLending(**b.dict(), book_id=book.id)
-        db.add(new_lending)
 
         return book
 
@@ -113,6 +116,3 @@ def return_book(book_serial: BookSerialFromPath, db = Depends(get_db)):
         Book_by_serial(db, book_serial).return_()
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-
-# TODO: what about the SQLalchemy warrning?

@@ -33,7 +33,8 @@ def acquire_database_url() -> str:
 
 SQLALCHEMY_DATABASE_URL = acquire_database_url()
 engine = create_engine(
-    SQLALCHEMY_DATABASE_URL
+    SQLALCHEMY_DATABASE_URL,
+    query_cache_size=0  # disabling query compilation cache
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
@@ -49,6 +50,7 @@ def get_db() -> Session:
         db.close()
 
 
+# TODO: where to place this exactly?
 def handle_unique_constraint_violation(exc, loc: list[str]):
     """
     Pydantic-like FastAPI-compatbile handler for UniqueViolation
@@ -101,6 +103,7 @@ class Book(Base):
     # I've tried typing it as list[BookLending] which I belive it is
     # or actually a mapping
     # TODO: have a look at this
+    # lendings: list["BookLending"] = relationship(
     lendings = relationship(
         "BookLending",
         back_populates="book",
@@ -126,15 +129,27 @@ class Book(Base):
         if self._active_lending:
             self._active_lending.end = func.now()
 
+    def borrow_by(self, borrower_library_card_number: int):
+        if not self.is_avaiable:
+            raise DoubleBorrowError()
+
+        self.lendings.append(BookLending(borrower_library_card_number=borrower_library_card_number, book_id=self.id))
+
     @property
     def _active_lending(self) -> Optional["BookLending"]:
         try:
             # optimization opportunity: there might be some N+1 going on here
             # the implementation is very naive
 
+            # this is apparently causing SQLAlchemy to question it's compilation cache cohesion o.0
+            # see https://sqlalche.me/e/20/cprf
             return next(filter(lambda L: not L.is_concluded, self.lendings))
         except StopIteration: # no active lending
             return None
+
+
+class DoubleBorrowError(Exception):
+    pass
 
 
 # this was consulted with a native-speaker-programmer, it's better than "BookLoan"
