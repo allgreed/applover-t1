@@ -3,6 +3,8 @@ SOURCES := src default.nix
 INPUTS :=
 ENTRYPOINT_DEPS := $(SOURCES) $(INPUTS)
 
+PSQL_LOCAL_CONNECTION_STRING=postgresql://user:password@localhost/db
+
 # Porcelain
 # ###############
 .PHONY: env-up env-down env-recreate container run build lint test watch
@@ -12,7 +14,7 @@ watch:
 	make --no-print-directory run
 
 run: setup ## run the app
-	APP_PGSQL_CONNECTION_STRING="postgresql://user:password@localhost/db" pdm run fastapi dev src/applover_t1/app.py 
+	APP_PGSQL_CONNECTION_STRING="$(PSQL_LOCAL_CONNECTION_STRING)" pdm run fastapi dev src/applover_t1/app.py 
 
 env-up: ## set up dev environment
 	# https://stackoverflow.com/questions/47207616/auto-remove-container-with-docker-compose-yml
@@ -28,6 +30,9 @@ test: setup ## run all tests
 
 container: ## create (and load) container image
 	@echo "Not implemented"; false
+
+psql: ## drop into a postgres shell
+	psql $(PSQL_LOCAL_CONNECTION_STRING)
 
 # Plumbing
 # ###############

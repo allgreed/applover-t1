@@ -1,30 +1,22 @@
 TODO: editor doesn't recognize fastapi imports
     -> can I enter venv reasonably?
+    ^ actually task this
 
-Dalej:
-        Backlink
-        V
-    Wypożyczenia =
-        książka
-        kto
-            (wypożyczający posiadają sześciocyfrowe numery karty bibliotecznej), see book serial
-        start
-        end
-            nullable
+TODO: by default return 204 from delete endpoints
+    ^ task research
 
-    Can I do a fancy constraint that only one book can be borrowed at a particular time?
+    oraz czy jest obecnie wypożyczona, kiedy i kto ją wypożyczył (wypożyczający posiadają
+    sześciocyfrowe numery karty bibliotecznej)
+        > different response read models? :D
 
-    Jakiś widok książki maybe?
+    TODOs
+    commit
 
-    ...
-also: EXISTING METHODS!
-
-API powinno umożliwiać:
-- Pobranie listy wszystkich książek
-    - hehe (careful N+1)
-- Aktualizację stanu książki: wypożyczona / dostępna
-
+    tests?
 ====
+
 Wywołanie polecenia docker compose up powinno skutkować uruchomieniem działającej aplikacji.
 
 Rozwiązanie dostarcz w formie linku do publicznego repozytorium git (dowolny hosting).
+
+commit + send

@@ -9,3 +9,8 @@
     - I don't bother with indexes, performance, etc.
 - I consider postgres password to be acceptable to store in an environment variable at this point
 - Since this is internal use only ("używane przez pracowników bibliotek") I'm skipping pagination for now
+- There's no semantics to an BookLending with a future end date
+    -> this should be implemented as a return commitment and then checked against real return date
+- I'm not enriely sure what are the semantics of deleting a book -> the book being missing?
+    anyway: deleting a book also deletes all records of said book lending
+- I'm not bothered by potential weird race conditions, yet I comment on them

@@ -5,10 +5,10 @@ import sys
 import psycopg2
 from fastapi import status
 from fastapi.responses import JSONResponse
-from sqlalchemy import CheckConstraint, Integer, String, create_engine
+from sqlalchemy import CheckConstraint, Integer, String, create_engine, DateTime, func, ForeignKey
 from sqlalchemy import Column as Col
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import Session, sessionmaker, relationship
 
 
 class Column(Col):
@@ -95,3 +95,33 @@ class Book(Base):
     title = Column(String)
     # note: one book can have many authors
     author = Column(String)
+
+    lendings = relationship(
+        "BookLending",
+        back_populates="book",
+        cascade="all, delete",
+    )
+
+    # optimization opportunity: there might be some N+1 going on here
+    # the implementation is very naive
+    @property
+    def is_avaiable(self) -> bool:
+        return all(x.is_book_returned for x in self.lendings)
+
+
+# this was consulted with a native speaker-programmer, it's better than BookLoan
+class BookLending(Base):
+    __tablename__ = "book_lendings"
+
+    id = Column(Integer, primary_key=True)
+
+    book_id = Column(Integer, ForeignKey("books.id", ondelete="CASCADE"))
+    book = relationship("Book", back_populates="lendings")
+
+    borrower_library_card_number = Column(Integer)
+    start = Column(DateTime(timezone=True), server_default=func.now())
+    end = Column(DateTime(timezone=True), nullable=True)
+
+    @property
+    def is_book_returned(self) -> bool:
+        return bool(self.end)

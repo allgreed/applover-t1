@@ -34,6 +34,10 @@ in
 
       podman
       podman-compose
+
+      # if managed fully by nix we could probably have version of this automatically match the server version
+      # "use more podman" alas
+      postgresql_16
     ];
   };
 }
