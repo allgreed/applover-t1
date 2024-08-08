@@ -1,13 +1,12 @@
 import datetime
-import contextlib
 from typing_extensions import Annotated
 from typing import Literal, Union
 
 from fastapi import FastAPI, Depends, status, Response, HTTPException, Path
 from pydantic import BaseModel, Field
-from sqlalchemy.exc import IntegrityError
 
-from .db import get_db, automigrate, Book, handle_unique_constraint_violation, BookLending, DoubleBorrowError
+from .models import Book, DoubleBorrowError
+from .db import get_db, automigrate, Db_T , handle_db_errors, UniqueConstraintViolation
 
 
 app = FastAPI()
@@ -46,25 +45,13 @@ class Borrow(BaseModel):
 
 
 # this seems like a technicality, like a `conint` would work in both places
-# semantically this is teh same as `BookSerial`
-# however the annotation doesn't work as a Field in place of a path parameter
+# semantically this is the same as `BookSerial`
+# however the Field annotation doesn't work in place of a path parameter
 BookSerialFromPath = Annotated[int, Path(**SixDigitIntConstraintStub)]
 
 @app.get("/books")
 def list_books(db = Depends(get_db)) -> list[BookRead]:
     return db.query(Book).all()
-
-
-# TODO: can this be dependency injected? :D
-# TODO: what with the type and does it belong here?
-# def Book_by_serial(db: Session, serial: BookSerial):
-def Book_by_serial(db, serial: BookSerial) -> Book:
-    result = db.query(Book).filter(Book.serial == serial).first()
-
-    if not result:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Book with serial number {serial} was not found")
-    else:
-        return result
 
 
 @app.delete("/books/{book_serial}")
@@ -80,13 +67,11 @@ def delete_book(book_serial: BookSerialFromPath, db = Depends(get_db)) -> None:
 @app.post("/books")
 def add_book(b: BookCreate, db = Depends(get_db)) -> BookAviable:
     new_book = Book(**b.dict())
-    try:
+    with handle_db_errors([
+            UniqueConstraintViolation(loc=["body", "serial"]),
+        ]):
         with db.begin():
             db.add(new_book)
-    # I don't love how excpetion IntegrityError requires an sqlalchemy import
-    # however also see no point in hiding the exact exception
-    except IntegrityError as e:
-        handle_unique_constraint_violation(e, loc=["body"])
 
     return new_book
 
@@ -116,3 +101,12 @@ def return_book(book_serial: BookSerialFromPath, db = Depends(get_db)):
         Book_by_serial(db, book_serial).return_()
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+def Book_by_serial(db: Db_T, serial: BookSerial) -> Book:
+    result = db.query(Book).filter(Book.serial == serial).first()
+
+    if not result:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Book with serial number {serial} was not found")
+    else:
+        return result
