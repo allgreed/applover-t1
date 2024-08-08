@@ -6,14 +6,19 @@ from fastapi import FastAPI, Depends, status, Response, HTTPException, Path
 from pydantic import BaseModel, Field
 
 from .models import Book, DoubleBorrowError
-from .db import get_db, automigrate, Db_T , handle_db_errors, UniqueConstraintViolation
+from .db import Database, Db_T , handle_db_errors, UniqueConstraintViolation
 
 
 app = FastAPI()
-automigrate()
 @app.get("/")
 def default():
     return "OK"
+
+
+@app.on_event("startup")
+def startup():
+    Database.connect()
+    Database.automigrate()
 
 
 SixDigitIntConstraintStub={"ge": 0, "le": 10 ** 6 - 1}
@@ -50,12 +55,12 @@ class Borrow(BaseModel):
 BookSerialFromPath = Annotated[int, Path(**SixDigitIntConstraintStub)]
 
 @app.get("/books")
-def list_books(db = Depends(get_db)) -> list[BookRead]:
+def list_books(db = Depends(Database.get_db)) -> list[BookRead]:
     return db.query(Book).all()
 
 
 @app.delete("/books/{book_serial}")
-def delete_book(book_serial: BookSerialFromPath, db = Depends(get_db)) -> None:
+def delete_book(book_serial: BookSerialFromPath, db = Depends(Database.get_db)) -> None:
     with db.begin():
         # optimization opportunity: this doesn't need to do a full table scan, since the serial is unique
         # nor does it need actually fetching the book in order to delete it
@@ -65,7 +70,7 @@ def delete_book(book_serial: BookSerialFromPath, db = Depends(get_db)) -> None:
 
 
 @app.post("/books")
-def add_book(b: BookCreate, db = Depends(get_db)) -> BookAviable:
+def add_book(b: BookCreate, db = Depends(Database.get_db)) -> BookAviable:
     new_book = Book(**b.dict())
     with handle_db_errors([
             UniqueConstraintViolation(loc=["body", "serial"]),
@@ -77,7 +82,7 @@ def add_book(b: BookCreate, db = Depends(get_db)) -> BookAviable:
 
 
 @app.post("/books/{book_serial}/lending")
-def borrow_book(b: Borrow, book_serial: BookSerialFromPath, db = Depends(get_db)) -> BookBorrowed:
+def borrow_book(b: Borrow, book_serial: BookSerialFromPath, db = Depends(Database.get_db)) -> BookBorrowed:
     with db.begin():
         # wrapping whole thing in a transaction should be enough, but I'm still not super sure it's race condition free
         book = Book_by_serial(db, book_serial)
@@ -91,7 +96,7 @@ def borrow_book(b: Borrow, book_serial: BookSerialFromPath, db = Depends(get_db)
 
 
 @app.delete("/books/{book_serial}/lending")
-def return_book(book_serial: BookSerialFromPath, db = Depends(get_db)):
+def return_book(book_serial: BookSerialFromPath, db = Depends(Database.get_db)):
     # there's a possible race condition if the return request gets send twice, the first request completes
     # the second one gets delayed and someone borrows that book before the second request reaches the sever
     # in that case the book would be marked as returned, even though it's not

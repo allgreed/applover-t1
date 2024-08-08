@@ -13,7 +13,35 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session, sessionmaker
 
 
-# TODO: global cache?
+Db_T = Session
+class Database:
+    engine = None
+    SessionLocal = None
+
+    @classmethod
+    def connect(cls):
+        SQLALCHEMY_DATABASE_URL = acquire_database_url()
+        cls.engine = create_engine(
+            SQLALCHEMY_DATABASE_URL,
+            query_cache_size=0  # disabling query compilation cache
+        )
+
+        cls.SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=cls.engine)
+
+    @classmethod
+    def get_db(cls) -> Db_T:
+        assert cls.SessionLocal
+        db = cls.SessionLocal()
+        try:
+            yield db
+        finally:
+            db.close()
+
+    @classmethod
+    def automigrate(cls):
+        Base.metadata.create_all(bind=cls.engine)
+
+
 def acquire_database_url() -> str:
     ENVVAR = "APP_PGSQL_CONNECTION_STRING"
     try:
@@ -21,19 +49,7 @@ def acquire_database_url() -> str:
     except KeyError:
         print(f"error: Missing environment variable {ENVVAR}", file=sys.stderr)
         exit(1)
-SQLALCHEMY_DATABASE_URL = acquire_database_url()
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL,
-    query_cache_size=0  # disabling query compilation cache
-)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Db_T = Session
-def get_db() -> Db_T:
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+
 
 
 @contextlib.contextmanager
@@ -96,8 +112,6 @@ class Column(Col):
     def __init__(self, *args, **kwargs):
         kwargs.setdefault('nullable', False)
         super().__init__(*args, **kwargs)
+
+
 Base = declarative_base()
-
-
-def automigrate():
-    Base.metadata.create_all(bind=engine)

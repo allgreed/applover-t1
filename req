@@ -1,9 +1,5 @@
-    V remainaing TODOs
-    how to distribute things across files?
-        - like... where should schemas go? o.0
-    commit
-
     some very basic e2e test
+    commit
 ====
 
 Wywołanie polecenia docker compose up powinno skutkować uruchomieniem działającej aplikacji.
