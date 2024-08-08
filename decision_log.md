@@ -16,3 +16,4 @@
     anyway: deleting a book also deletes all records of said book lending
 - I'm not bothered by potential weird race conditions, yet I comment on them
 - Sometimes I went a bit down the rabbit hole, since I believe that unpaid take-home assignments should be fun. That was fun!
+- I'm sacrificing Docker reproducibility and image size for conveniance and delivery time

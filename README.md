@@ -6,6 +6,8 @@ A (apparently?) first-phase recruitment task, API for a library
 
 > Wywołanie polecenia `docker-compose up` powinno skutkować uruchomieniem działającej aplikacji.
 
+The app will run on port `8000`. Feel free to help yourself with `./tests/scenario.sh`
+
 ### Development
 
 #### Prerequisites

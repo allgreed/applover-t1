@@ -7,7 +7,7 @@ PSQL_LOCAL_CONNECTION_STRING=postgresql://user:password@localhost/db
 
 # Porcelain
 # ###############
-.PHONY: env-up env-down env-recreate container run build lint test watch
+.PHONY: env-up container run build lint test watch
 
 watch:
 	@echo This is a long running webserver, `run` is actually `watch`
@@ -18,12 +18,7 @@ run: setup ## run the app
 
 env-up: ## set up dev environment
 	# https://stackoverflow.com/questions/47207616/auto-remove-container-with-docker-compose-yml
-	podman-compose up --force-recreate -V
-
-env-down: ## tear down dev environment
-	@echo "Not implemented"; false
-
-env-recreate: env-down env-up ## deconstruct current env and create another one
+	podman-compose up postgres --force-recreate -V
 
 test: setup ## run all tests
 	@echo "Not implemented"; false

@@ -1,3 +1,4 @@
+import time
 import datetime
 from typing_extensions import Annotated
 from typing import Literal, Union
@@ -17,6 +18,11 @@ def default():
 
 @app.on_event("startup")
 def startup():
+    # when doing podman-compose up AND the image is built THEN there's a window where
+    # postgres passes the healthcheck yet doesn't accept connections yet
+    # it's late so I issue the only command I can think of now
+    time.sleep(1)
+
     Database.connect()
     Database.automigrate()
 
