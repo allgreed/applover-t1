@@ -90,7 +90,6 @@ DETAIL:  Key \((.+)\)=\((.+)\) already exists."""
 class Book(Base):
     __tablename__ = "books"
 
-    # TODO: is this some kind of legacy notation?
     id = Column(Integer, primary_key=True)
     # note: I don't think CheckConstraint is the right solution here and I wouldn't have done it in a production code
     # but a) I wanted to try it out and b) now you know that I know
@@ -100,10 +99,6 @@ class Book(Base):
     # note: one book can have many authors
     author = Column(String)
 
-    # I've tried typing it as list[BookLending] which I belive it is
-    # or actually a mapping
-    # TODO: have a look at this
-    # lendings: list["BookLending"] = relationship(
     lendings = relationship(
         "BookLending",
         back_populates="book",
@@ -143,7 +138,9 @@ class Book(Base):
 
             # this is apparently causing SQLAlchemy to question it's compilation cache cohesion o.0
             # see https://sqlalche.me/e/20/cprf
-            return next(filter(lambda L: not L.is_concluded, self.lendings))
+            result: BookLending = next(filter(lambda L: not L.is_concluded, self.lendings))
+            # this type assert is needed becasue otherwise L is of type "BookLending | None" and errors on member access
+            return result
         except StopIteration: # no active lending
             return None
 
