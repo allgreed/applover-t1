@@ -98,6 +98,9 @@ class Book(Base):
     # note: one book can have many authors
     author = Column(String)
 
+    # I've tried typing it as list[BookLending] which I belive it is
+    # or actually a mapping
+    # TODO: have a look at this
     lendings = relationship(
         "BookLending",
         back_populates="book",
@@ -106,27 +109,35 @@ class Book(Base):
 
     @property
     def is_avaiable(self) -> bool:
-        return not bool(self.current_lending)
-
-    @property
-    def current_lending(self) -> Optional["BookLending"]:
-        try:
-            # optimization opportunity: there might be some N+1 going on here
-            # the implementation is very naive
-            return next(filter(lambda L: not L.is_book_returned, self.lendings))
-        except StopIteration: # no active lending
-            return None
+        return not bool(self._active_lending)
 
     @property
     def borrower_library_card_number(self) -> Optional[int]:
-        return self.current_lending.borrower_library_card_number
+        assert self._active_lending, "This is only called on a borrowed book"
+        return self._active_lending.borrower_library_card_number
 
     @property
     def borrowed_on(self):
-        return self.current_lending.start
+        assert self._active_lending, "This is only called on a borrowed book"
+        return self._active_lending.start
+
+    # becasue Python is *very* fussy with keywords
+    def return_(self):
+        if self._active_lending:
+            self._active_lending.end = func.now()
+
+    @property
+    def _active_lending(self) -> Optional["BookLending"]:
+        try:
+            # optimization opportunity: there might be some N+1 going on here
+            # the implementation is very naive
+
+            return next(filter(lambda L: not L.is_concluded, self.lendings))
+        except StopIteration: # no active lending
+            return None
 
 
-# this was consulted with a native speaker-programmer, it's better than BookLoan
+# this was consulted with a native-speaker-programmer, it's better than "BookLoan"
 class BookLending(Base):
     __tablename__ = "book_lendings"
 
@@ -140,5 +151,5 @@ class BookLending(Base):
     end = Column(DateTime(timezone=True), nullable=True)
 
     @property
-    def is_book_returned(self) -> bool:
+    def is_concluded(self) -> bool:
         return bool(self.end)
