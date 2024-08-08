@@ -5,10 +5,13 @@ TODO: editor doesn't recognize fastapi imports
 TODO: by default return 204 from delete endpoints
     ^ task research
 
+TODO: Path vs Field, example: BookSerial
+    ^ task research
+
+TODO: tests - stateful property based
+
     TODOs
     commit
-
-    tests?
 ====
 
 Wywołanie polecenia docker compose up powinno skutkować uruchomieniem działającej aplikacji.
