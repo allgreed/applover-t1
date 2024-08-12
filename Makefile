@@ -14,7 +14,7 @@ watch:
 	make --no-print-directory run
 
 run: setup ## run the app
-	APP_PGSQL_CONNECTION_STRING="$(PSQL_LOCAL_CONNECTION_STRING)" pdm run fastapi dev src/applover_t1/app.py 
+	APP_DEV_REMIGRATE_DB=1 APP_PGSQL_CONNECTION_STRING="$(PSQL_LOCAL_CONNECTION_STRING)" pdm run fastapi dev src/applover_t1/app.py 
 
 env-up: ## set up dev environment
 	# https://stackoverflow.com/questions/47207616/auto-remove-container-with-docker-compose-yml

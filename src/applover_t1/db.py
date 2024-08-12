@@ -38,6 +38,9 @@ class Database:
 
     @classmethod
     def automigrate(cls):
+        if os.environ.get("APP_DEV_REMIGRATE_DB"):
+            Base.metadata.drop_all(bind=cls.engine)
+
         Base.metadata.create_all(bind=cls.engine)
 
 

@@ -1,16 +1,21 @@
-import time
 import datetime
-from typing_extensions import Annotated
-from typing import Literal, Union
+import time
+from typing import Literal, TypeVar, Union
 
-from fastapi import FastAPI, Depends, status, Response, HTTPException, Path
+from fastapi import Depends, FastAPI, HTTPException, Path, Response, status
+from fastapi_pagination import add_pagination
+from fastapi_pagination.cursor import CursorPage
+from fastapi_pagination.customization import CustomizedPage, UseIncludeTotal
+from fastapi_pagination.ext.sqlalchemy import paginate
 from pydantic import BaseModel, Field
+from sqlalchemy import select
+from typing_extensions import Annotated
 
+from .db import Database, Db_T, UniqueConstraintViolation, handle_db_errors
 from .models import Book, DoubleBorrowError
-from .db import Database, Db_T , handle_db_errors, UniqueConstraintViolation
-
 
 app = FastAPI()
+add_pagination(app)
 @app.get("/")
 def default():
     return "OK"
@@ -55,9 +60,14 @@ class Borrow(BaseModel):
     borrower_library_card_number: LibraryCardNumber
 
 
+T = TypeVar("T")
+CursorWithTotalPage = CustomizedPage[
+    CursorPage[T],
+    UseIncludeTotal(True),
+]
 @app.get("/books")
-def list_books(db = Depends(Database.get_db)) -> list[BookRead]:
-    return db.query(Book).all()
+def list_books(db = Depends(Database.get_db)) -> CursorWithTotalPage[BookRead]:
+    return paginate(db, select(Book).order_by(Book.serial_number))
 
 
 @app.delete("/books/{book_serial_number}")
