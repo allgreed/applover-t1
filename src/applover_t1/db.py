@@ -67,7 +67,7 @@ def handle_db_errors(all_handlers):
 
         exc = e.orig
         # I'd love to know a better way if there is one
-        # also: careful with the regex, the second line has to have no ident
+        # also: careful with the regex, the second line has to have no indent
         REG = r"""ERROR:  duplicate key value violates unique constraint "books_serial_key"
 DETAIL:  Key \((.+)\)=\((.+)\) already exists."""
         assert exc.pgerror, "There is a body to the UniqueViolation"

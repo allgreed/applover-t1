@@ -27,14 +27,14 @@ def startup():
     Database.automigrate()
 
 
-SixDigitIntConstraintStub={"ge": 0, "le": 10 ** 6 - 1}
-SixDigitIdField = Annotated[int, Field(strict=True, **SixDigitIntConstraintStub)]
+SixDigitStrConstraintStub={"pattern": r"[0-9]{6}"}
+SixDigitIdField = Annotated[str, Field(strict=True, **SixDigitStrConstraintStub)]
 
 LibraryCardNumber = SixDigitIdField
-BookSerial = SixDigitIdField
+BookSerialNumber = SixDigitIdField
 
 class BookBase(BaseModel):
-    serial: BookSerial
+    serial_number: BookSerialNumber
     title: str
     author: str
 
@@ -55,22 +55,17 @@ class Borrow(BaseModel):
     borrower_library_card_number: LibraryCardNumber
 
 
-# this seems like a technicality, like a `conint` would work in both places
-# semantically this is the same as `BookSerial`
-# however the Field annotation doesn't work in place of a path parameter
-BookSerialFromPath = Annotated[int, Path(**SixDigitIntConstraintStub)]
-
 @app.get("/books")
 def list_books(db = Depends(Database.get_db)) -> list[BookRead]:
     return db.query(Book).all()
 
 
-@app.delete("/books/{book_serial}")
-def delete_book(book_serial: BookSerialFromPath, db = Depends(Database.get_db)) -> None:
+@app.delete("/books/{book_serial_number}")
+def delete_book(book_serial_number: BookSerialNumber, db = Depends(Database.get_db)) -> None:
     with db.begin():
-        # optimization opportunity: this doesn't need to do a full table scan, since the serial is unique
+        # optimization opportunity: this doesn't need to do a full table scan, since the serial number is unique
         # nor does it need actually fetching the book in order to delete it
-        db.delete(Book_by_serial(db, book_serial))
+        db.delete(Book_by_serial_number(db, book_serial_number))
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
@@ -79,7 +74,7 @@ def delete_book(book_serial: BookSerialFromPath, db = Depends(Database.get_db)) 
 def add_book(b: BookCreate, db = Depends(Database.get_db)) -> BookAviable:
     new_book = Book(**b.dict())
     with handle_db_errors([
-            UniqueConstraintViolation(loc=["body", "serial"]),
+            UniqueConstraintViolation(loc=["body", "serial_number"]),
         ]):
         with db.begin():
             db.add(new_book)
@@ -87,11 +82,11 @@ def add_book(b: BookCreate, db = Depends(Database.get_db)) -> BookAviable:
     return new_book
 
 
-@app.post("/books/{book_serial}/lending")
-def borrow_book(b: Borrow, book_serial: BookSerialFromPath, db = Depends(Database.get_db)) -> BookBorrowed:
+@app.post("/books/{book_serial_number}/lending")
+def borrow_book(b: Borrow, book_serial_number: BookSerialNumber, db = Depends(Database.get_db)) -> BookBorrowed:
     with db.begin():
         # wrapping whole thing in a transaction should be enough, but I'm still not super sure it's race condition free
-        book = Book_by_serial(db, book_serial)
+        book = Book_by_serial_number(db, book_serial_number)
 
         try:
             book.borrow_by(b.borrower_library_card_number)
@@ -101,21 +96,21 @@ def borrow_book(b: Borrow, book_serial: BookSerialFromPath, db = Depends(Databas
         return book
 
 
-@app.delete("/books/{book_serial}/lending")
-def return_book(book_serial: BookSerialFromPath, db = Depends(Database.get_db)):
+@app.delete("/books/{book_serial_number}/lending")
+def return_book(book_serial_number: BookSerialNumber, db = Depends(Database.get_db)):
     # there's a possible race condition if the return request gets send twice, the first request completes
     # the second one gets delayed and someone borrows that book before the second request reaches the server
     # in that case the book would be marked as returned, even though it's not
     # mitigiation: include borrower library card number in the request
     # better mititgation: include BookLending uuid in the request
     with db.begin():
-        Book_by_serial(db, book_serial).return_()
+        Book_by_serial_number(db, book_serial_number).return_()
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-def Book_by_serial(db: Db_T, serial: BookSerial) -> Book:
-    result = db.query(Book).filter(Book.serial == serial).first()
+def Book_by_serial_number(db: Db_T, serial: BookSerialNumber) -> Book:
+    result = db.query(Book).filter(Book.serial_number == serial).first()
 
     if not result:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Book with serial number {serial} was not found")

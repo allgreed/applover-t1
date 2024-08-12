@@ -1,6 +1,6 @@
 from typing import Optional
 
-from sqlalchemy import CheckConstraint, Integer, String, DateTime, func, ForeignKey
+from sqlalchemy import Integer, String, DateTime, func, ForeignKey
 from sqlalchemy.orm import relationship
 
 from .db import Base, Column
@@ -10,10 +10,7 @@ class Book(Base):
     __tablename__ = "books"
 
     id = Column(Integer, primary_key=True)
-    # note: I don't think CheckConstraint is the right solution here and I wouldn't have done it in a production code
-    # but a) I wanted to try it out and b) now you know that I know
-    # also: I think it's an interesting challange how to keep this constraint in sync between db and the schemas
-    serial = Column("serial", Integer, CheckConstraint(f"serial >= 0 AND serial < {'1' + '0' * 6}"), unique=True)
+    serial_number = Column(String(6), unique=True)
     title = Column(String)
     # note: one book can have many authors
     author = Column(String)
@@ -43,7 +40,7 @@ class Book(Base):
         if self._active_lending:
             self._active_lending.end = func.now()
 
-    def borrow_by(self, borrower_library_card_number: int):
+    def borrow_by(self, borrower_library_card_number: str):
         if not self.is_avaiable:
             raise DoubleBorrowError()
 
@@ -74,7 +71,7 @@ class BookLending(Base):
     book_id = Column(Integer, ForeignKey("books.id", ondelete="CASCADE"))
     book = relationship("Book", back_populates="lendings")
 
-    borrower_library_card_number = Column(Integer)
+    borrower_library_card_number = Column(String(6))
     start = Column(DateTime(timezone=True), server_default=func.now())
     end = Column(DateTime(timezone=True), nullable=True)
 
