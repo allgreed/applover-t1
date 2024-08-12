@@ -1,19 +1,20 @@
 from typing import Optional
+from datetime import datetime
 
-from sqlalchemy import Integer, String, DateTime, func, ForeignKey
-from sqlalchemy.orm import relationship
+from sqlalchemy import String, DateTime, func, ForeignKey
+from sqlalchemy.orm import relationship, mapped_column, Mapped
 
-from .db import Base, Column
+from .db import Base
 
 
 class Book(Base):
     __tablename__ = "books"
 
-    id = Column(Integer, primary_key=True)
-    serial_number = Column(String(6), unique=True)
-    title = Column(String)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    serial_number: Mapped[str] = mapped_column(String(6), unique=True)
+    title: Mapped[str]
     # note: one book can have many authors
-    author = Column(String)
+    author: Mapped[str]
 
     lendings = relationship(
         "BookLending",
@@ -66,14 +67,13 @@ class DoubleBorrowError(Exception):
 class BookLending(Base):
     __tablename__ = "book_lendings"
 
-    id = Column(Integer, primary_key=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    borrower_library_card_number: Mapped[str] = mapped_column(String(6))
+    start: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    end: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
 
-    book_id = Column(Integer, ForeignKey("books.id", ondelete="CASCADE"))
+    book_id: Mapped[int] = mapped_column(ForeignKey("books.id", ondelete="CASCADE"))
     book = relationship("Book", back_populates="lendings")
-
-    borrower_library_card_number = Column(String(6))
-    start = Column(DateTime(timezone=True), server_default=func.now())
-    end = Column(DateTime(timezone=True), nullable=True)
 
     @property
     def is_concluded(self) -> bool:

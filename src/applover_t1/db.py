@@ -103,17 +103,4 @@ class UniqueConstraintViolation:
     loc: list[str]
 
 
-class Column(Col):
-    """
-    Becuase the default is "True"
-    see: https://stackoverflow.com/a/68052174/9134286
-    """
-    # this is required to let SQLAlchemy know that it's still cacheable
-    inherit_cache = True
-
-    def __init__(self, *args, **kwargs):
-        kwargs.setdefault('nullable', False)
-        super().__init__(*args, **kwargs)
-
-
 Base = declarative_base()
