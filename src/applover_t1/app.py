@@ -47,10 +47,10 @@ class BookCreate(BookBase):
     pass
 
 class BookAviable(BookBase):
-    is_avaiable: Literal[True]
+    is_available: Literal[True]
 
 class BookBorrowed(BookBase):
-    is_avaiable: Literal[False]
+    is_available: Literal[False]
     borrower_library_card_number: LibraryCardNumber
     borrowed_on: datetime.datetime
 

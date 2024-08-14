@@ -23,7 +23,7 @@ class Book(Base):
     )
 
     @property
-    def is_avaiable(self) -> bool:
+    def is_available(self) -> bool:
         return not bool(self._active_lending)
 
     @property
@@ -42,7 +42,7 @@ class Book(Base):
             self._active_lending.end = func.now()
 
     def borrow_by(self, borrower_library_card_number: str):
-        if not self.is_avaiable:
+        if not self.is_available:
             raise DoubleBorrowError()
 
         self.lendings.append(BookLending(borrower_library_card_number=borrower_library_card_number, book_id=self.id))
