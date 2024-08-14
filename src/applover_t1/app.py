@@ -75,7 +75,7 @@ def delete_book(book_serial_number: BookSerialNumber, db = Depends(Database.get_
     with db.begin():
         # optimization opportunity: this doesn't need to do a full table scan, since the serial number is unique
         # nor does it need actually fetching the book in order to delete it
-        db.delete(Book_by_serial_number(db, book_serial_number))
+        db.delete(get_Book_by_serial_number_or_404(db, book_serial_number))
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
@@ -96,7 +96,7 @@ def add_book(b: BookCreate, db = Depends(Database.get_db)) -> BookAviable:
 def borrow_book(b: Borrow, book_serial_number: BookSerialNumber, db = Depends(Database.get_db)) -> BookBorrowed:
     with db.begin():
         # wrapping whole thing in a transaction should be enough, but I'm still not super sure it's race condition free
-        book = Book_by_serial_number(db, book_serial_number)
+        book = get_Book_by_serial_number_or_404(db, book_serial_number)
 
         try:
             book.borrow_by(b.borrower_library_card_number)
@@ -114,12 +114,13 @@ def return_book(book_serial_number: BookSerialNumber, db = Depends(Database.get_
     # mitigiation: include borrower library card number in the request
     # better mititgation: include BookLending uuid in the request
     with db.begin():
-        Book_by_serial_number(db, book_serial_number).return_()
+        get_Book_by_serial_number_or_404(db, book_serial_number).return_()
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-def Book_by_serial_number(db: Db_T, serial: BookSerialNumber) -> Book:
+# TODO: might this be depended on db and would it make sense?
+def get_Book_by_serial_number_or_404(db: Db_T, serial: BookSerialNumber) -> Book:
     result = db.query(Book).filter(Book.serial_number == serial).first()
 
     if not result:
